@@ -53,9 +53,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaCore.csproj",
-      "projectName": "ForzaCore",
-      "projectPath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaCore.csproj",
+      "projectUniqueName": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
+      "projectName": "ForzaDualSense",
+      "projectPath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
       "packagesPath": "C:\\Users\\patma\\.nuget\\packages\\",
       "outputPath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\obj\\",
       "projectStyle": "PackageReference",

@@ -1,4 +1,4 @@
-﻿namespace ForzaCore
+﻿namespace ForzaDualSense
 {
     public class DataPacket
     {

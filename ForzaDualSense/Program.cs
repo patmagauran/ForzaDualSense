@@ -5,31 +5,76 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace ForzaCore
+namespace ForzaDualSense
 {
     class Program
     {
-        private const int recordRateMS = 100;
-        private static bool recordingData = false;
-        private static bool isRaceOn = false;
-        private static DataPacket data = new DataPacket();
-        private const int FORZA_DATA_OUT_PORT = 5300;
-        private const int FORZA_HOST_PORT = 5200;
-        private static string currentFilename = "./data/" + DateTime.Now.ToFileTime() + ".csv";
-        static UdpClient senderClient;
-        static IPEndPoint endPoint;
-        static void Connect()
+        //This sends the data to DualSenseX based on the input parsed data from Forza.
+        //See DataPacket.cs for more details about what forza parameters can be accessed.
+        //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
+        //Also see the Test Function below to see examples about those commands
+        static void SendData(DataPacket data)
         {
-            senderClient = new UdpClient();
-            endPoint = new IPEndPoint(Triggers.localhost, 6750);
-        }
+            Packet p = new Packet();
 
-        static void Send(Packet data)
-        {
-            var RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
-            senderClient.Send(RequestData, RequestData.Length, endPoint);
-        }
+            //Set the controller to do this for
+            int controllerIndex = 0;
 
+            //Initialize our array of instructions
+            p.instructions = new Instruction[4];
+
+            //Update the left(Brake) trigger
+            p.instructions[0].type = InstructionType.TriggerUpdate;
+            //By default, it should be uniform hard resistance
+            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 8 };
+
+            //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
+            float combinedTireSlip = (data.TireCombinedSlipFrontLeft + data.TireCombinedSlipFrontRight + data.TireCombinedSlipRearLeft + data.TireCombinedSlipRearRight) / 4;
+
+            //All grip lost, trigger should be loose
+            if (combinedTireSlip > 1)
+            {
+                //Set left trigger to normal mode(i.e no resistance)
+                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
+
+            }
+            //Some grip lost, begin to vibrate according to the amount of grip lost
+            else if (combinedTireSlip > 0.25)
+            {
+                int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
+                //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
+                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
+
+            }
+
+            //Set the updates for the right Trigger(Throttle)
+            p.instructions[2].type = InstructionType.TriggerUpdate;
+            //It should probably always be uniformly stiff
+            p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, 8 };
+
+            // if (combinedTireSlip > 1)
+            // {
+            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Normal, 0, 0 };
+
+            // }
+            // else if (combinedTireSlip > 0.25)
+            // {
+            //     int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
+            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
+
+            // }
+
+            //Update the light bar
+            p.instructions[1].type = InstructionType.RGBUpdate;
+            //Currently registers intensity on the green channel based on engnine RPM as a percantage of the maxium. 
+            p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor((data.CurrentEngineRpm / data.EngineMaxRpm) * 255), 0 };
+
+            //Send the commands to DualSenseX
+            Send(p);
+
+
+        }
+        //This is the same test method from the UDPExample in DualSenseX. It just provides a basic overview of the different commands that can be used with DualSenseX.
         static void test(string[] args)
         {
 
@@ -145,27 +190,57 @@ namespace ForzaCore
                 Console.ReadKey();
             }
         }
+        //Maps floats from one range to another.
+        public static float Map(float x, float in_min, float in_max, float out_min, float out_max)
+        {
+            return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
+
+        private static DataPacket data = new DataPacket();
+        private const int FORZA_DATA_OUT_PORT = 5300;
+        static UdpClient senderClient;
+        static IPEndPoint endPoint;
+        //Connect to DualSenseX
+        static void Connect()
+        {
+            senderClient = new UdpClient();
+            endPoint = new IPEndPoint(Triggers.localhost, 6750);
+        }
+        //Send Data to DualSenseX
+        static void Send(Packet data)
+        {
+            var RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
+            senderClient.Send(RequestData, RequestData.Length, endPoint);
+        }
+
+        //Main running thread of program.
         static async Task Main(string[] args)
         {
             #region udp stuff
+            //Connect to DualSenseX
             Connect();
 
+            //Connect to Forza
             var ipEndPoint = new IPEndPoint(IPAddress.Loopback, FORZA_DATA_OUT_PORT);
-
-
             var client = new UdpClient(FORZA_DATA_OUT_PORT);
+
+            Console.WriteLine("The Program is running. Please set the Forza data out to 127.0.0.1, port 5300 and the DualSenseX UDP Port to 6750");
+
+            //Main loop, go until killed
             while (true)
             {
+                //If Forza sends an update
                 await client.ReceiveAsync().ContinueWith(receive =>
                 {
+                    //parse data
                     var resultBuffer = receive.Result.Buffer;
                     if (!AdjustToBufferType(resultBuffer.Length))
                     {
                         //  return;
                     }
-                    // send data to node here
-
                     data = ParseData(resultBuffer);
+
+                    //Process and send data to DualSenseX
                     SendData(data);
 
                 });
@@ -176,52 +251,7 @@ namespace ForzaCore
 
         }
 
-        static void SendData(DataPacket data)
-        {
-            Packet p = new Packet();
-
-            int controllerIndex = 0;
-
-
-            p.instructions = new Instruction[4];
-            p.instructions[0].type = InstructionType.TriggerUpdate;
-            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 8 };
-            float combinedTireSlip = (data.TireCombinedSlipFrontLeft + data.TireCombinedSlipFrontRight + data.TireCombinedSlipRearLeft + data.TireCombinedSlipRearRight) / 4;
-            if (combinedTireSlip > 1)
-            {
-                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
-
-            }
-            else if (combinedTireSlip > 0.25)
-            {
-                int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
-                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
-
-            }
-            p.instructions[2].type = InstructionType.TriggerUpdate;
-            p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, 8 };
-            // if (combinedTireSlip > 1)
-            // {
-            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Normal, 0, 0 };
-
-            // }
-            // else if (combinedTireSlip > 0.25)
-            // {
-            //     int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
-            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
-
-            // }
-            p.instructions[1].type = InstructionType.RGBUpdate;
-            p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor((data.CurrentEngineRpm / data.EngineMaxRpm) * 255), 0 };
-            Send(p);
-
-
-        }
-
-        public static float Map(float x, float in_min, float in_max, float out_min, float out_max)
-        {
-            return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-        }
+        //Parses data from Forza into a DataPacket
         static DataPacket ParseData(byte[] packet)
         {
             DataPacket data = new DataPacket();
@@ -318,6 +348,7 @@ namespace ForzaCore
             return data;
         }
 
+        //Support different standards
         static bool AdjustToBufferType(int bufferLength)
         {
             switch (bufferLength)
@@ -337,6 +368,8 @@ namespace ForzaCore
 
 
     }
+
+    //Needed to communicate with DualSenseX
     public static class Triggers
     {
         public static IPAddress localhost = new IPAddress(new byte[] { 127, 0, 0, 1 });
@@ -352,7 +385,7 @@ namespace ForzaCore
         }
     }
 
-
+    //The different trigger Modes. These correlate the values in the DualSenseX UI
     public enum TriggerMode
     {
         Normal = 0,
@@ -376,6 +409,7 @@ namespace ForzaCore
         Machine = 18
     }
 
+    //Custom Trigger Values. These correspond to the values in the DualSenseX UI
     public enum CustomTriggerValueMode
     {
         OFF = 0,

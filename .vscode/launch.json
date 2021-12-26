@@ -11,9 +11,9 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/ForzaCore/bin/Debug/net6.0/ForzaCore.exe",
+            "program": "${workspaceFolder}/ForzaDualSense/bin/Debug/net6.0/ForzaDualSense.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/ForzaCore",
+            "cwd": "${workspaceFolder}/ForzaDualSense",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false
