@@ -9,6 +9,19 @@ namespace ForzaDualSense
 {
     class Program
     {
+        private const float GRIP_LOSS_VAL = 0.5f; //The point at which the brake will begin to become choppy
+        private const int MAX_BRAKE_VIBRATION = 35; //The maximum brake frequency in Hz (avoid over 40). COrrelates to better grip
+        private const float TURN_ACCEL_MOD = 0.5f; //How to scale turning acceleration in determining throttle stiffness.
+        private const float FORWARD_ACCEL_MOD = 1.0f;//How to scale Forward acceleration in determining throttle stiffness.
+        private const int MIN_BRAKE_STIFFNESS = 200; //On a scale of 1-200 with 1 being most stiff
+        private const int MAX_BRAKE_STIFFNESS = 1; //On a scale of 1-200 with 1 being most stiff
+        private const int BRAKE_VIBRATION_START = 20; //The position (0-255) at which the brake should feel engaged with low grip surfaces
+        private const int MAX_THROTTLE_RESISTANCE = 6; //The Maximum resistance on the throttle (0-7)
+        private const int MAX_BRAKE_RESISTANCE = 6;//The Maximum resistance on the Brake (0-7)
+        private const int MIN_THROTTLE_RESISTANCE = 1;//The Minimum resistance on the throttle (0-7)
+        private const int MIN_BRAKE_RESISTANCE = 1;//The Minimum resistance on the Brake (0-7)
+        private const int ACCELRATION_LIMIT = 10; //The upper end acceleration when calculating the throttle resistance. Any acceleration above this will be counted as this value when determining the throttle resistance.
+
         //This sends the data to DualSenseX based on the input parsed data from Forza.
         //See DataPacket.cs for more details about what forza parameters can be accessed.
         //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
@@ -19,17 +32,28 @@ namespace ForzaDualSense
 
             //Set the controller to do this for
             int controllerIndex = 0;
-
+            int resistance = 0;
             //Initialize our array of instructions
             p.instructions = new Instruction[4];
 
+            //Set the updates for the right Trigger(Throttle)
+            p.instructions[2].type = InstructionType.TriggerUpdate;
+            //It should probably always be uniformly stiff
+            float avgAccel = (float)Math.Sqrt((TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
+            resistance = (int)Math.Floor(Map(avgAccel, 0, ACCELRATION_LIMIT, MIN_THROTTLE_RESISTANCE, MAX_THROTTLE_RESISTANCE));
+
+            p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, resistance };
+
+
             //Update the left(Brake) trigger
             p.instructions[0].type = InstructionType.TriggerUpdate;
-            //By default, it should be uniform hard resistance
-            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 8 };
+            //By default, Increasingly resistant to force
+            resistance = (int)Math.Floor(Map(data.Brake, 0, 1, MIN_BRAKE_RESISTANCE, MAX_BRAKE_RESISTANCE));
+
+            p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, resistance };
 
             //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
-            float combinedTireSlip = (data.TireCombinedSlipFrontLeft + data.TireCombinedSlipFrontRight + data.TireCombinedSlipRearLeft + data.TireCombinedSlipRearRight) / 4;
+            float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
 
             //All grip lost, trigger should be loose
             if (combinedTireSlip > 1)
@@ -39,30 +63,15 @@ namespace ForzaDualSense
 
             }
             //Some grip lost, begin to vibrate according to the amount of grip lost
-            else if (combinedTireSlip > 0.25)
+            else if (combinedTireSlip > GRIP_LOSS_VAL)
             {
-                int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
+                int freq = MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, GRIP_LOSS_VAL, 1, 0, MAX_BRAKE_VIBRATION));
+                resistance = MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 1, MAX_BRAKE_STIFFNESS, MIN_BRAKE_STIFFNESS));
+
                 //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
-                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
+                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, resistance, BRAKE_VIBRATION_START, 0, 0, 0, 0 };
 
             }
-
-            //Set the updates for the right Trigger(Throttle)
-            p.instructions[2].type = InstructionType.TriggerUpdate;
-            //It should probably always be uniformly stiff
-            p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, 8 };
-
-            // if (combinedTireSlip > 1)
-            // {
-            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Normal, 0, 0 };
-
-            // }
-            // else if (combinedTireSlip > 0.25)
-            // {
-            //     int freq = 35 - (int)Math.Floor(Map(combinedTireSlip, 0.25f, 1, 0, 35));
-            //     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, 104, 76, 0, 0, 0, 0 };
-
-            // }
 
             //Update the light bar
             p.instructions[1].type = InstructionType.RGBUpdate;
@@ -193,6 +202,14 @@ namespace ForzaDualSense
         //Maps floats from one range to another.
         public static float Map(float x, float in_min, float in_max, float out_min, float out_max)
         {
+            if (x > in_max)
+            {
+                x = in_max;
+            }
+            else if (x < in_min)
+            {
+                x = in_min;
+            }
             return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
         }
 
