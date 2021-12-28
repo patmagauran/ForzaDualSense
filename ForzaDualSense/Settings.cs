@@ -15,5 +15,7 @@ namespace ForzaDualSense
         public int MIN_BRAKE_RESISTANCE { get; set; } = 1;//The Minimum resistance on the Brake (0-7)
         public int ACCELRATION_LIMIT { get; set; } = 10; //The upper end acceleration when calculating the throttle resistance. Any acceleration above this will be counted as this value when determining the throttle resistance.
         public bool DISABLE_APP_CHECK { get; set; } = false; //Should we disable the check for running applications?
+        public int DSX_PORT { get; set; } = 6969; //Port for DSX Port Listener
+        public int FORZA_PORT { get; set; } = 5300; //Port for Forza UDP server
     }
 }

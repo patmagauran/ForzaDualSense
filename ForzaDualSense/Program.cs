@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace ForzaDualSense
 {
@@ -205,83 +206,152 @@ namespace ForzaDualSense
         }
 
         private static DataPacket data = new DataPacket();
-        private const int FORZA_DATA_OUT_PORT = 5300;
         static UdpClient senderClient;
         static IPEndPoint endPoint;
         //Connect to DualSenseX
         static void Connect()
         {
             senderClient = new UdpClient();
-            endPoint = new IPEndPoint(Triggers.localhost, 6969);
+            var portNumber = File.ReadAllText(@"C:\Temp\DualSenseX\DualSenseX_PortNumber.txt");
+            Console.WriteLine("DSX is using port " + portNumber + ". Attempting to connect..");
+            int portNum = settings.DSX_PORT;
+            if (portNumber != null)
+            {
+                try
+                {
+                    portNum = Convert.ToInt32(portNumber);
+                }
+                catch (FormatException e)
+                {
+                    Console.WriteLine($"DSX provided a non numerical Port! Using configured default({settings.DSX_PORT}).");
+                    portNum = settings.DSX_PORT;
+                }
+            }
+            else
+            {
+                Console.WriteLine($"DSX did not provided a port value. Using configured default({settings.DSX_PORT})");
+            }
+
+            endPoint = new IPEndPoint(Triggers.localhost, Convert.ToInt32(portNumber));
+            try
+            {
+                senderClient.Connect(endPoint);
+            }
+            catch (Exception e)
+            {
+                Console.Write("Error Connecting: ");
+
+                if (e is SocketException)
+                {
+                    Console.WriteLine("Couldn't Access Port. " + e.Message);
+                }
+                else if (e is ObjectDisposedException)
+                {
+                    Console.WriteLine("Connection Object Closed. Restart the Application.");
+                }
+                else
+                {
+                    Console.WriteLine("Unknown Error: " + e.Message);
+                }
+                throw e;
+            }
         }
         //Send Data to DualSenseX
         static void Send(Packet data)
         {
             var RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
-            senderClient.Send(RequestData, RequestData.Length, endPoint);
+
+            try
+            {
+                senderClient.Send(RequestData, RequestData.Length);
+            }
+            catch (Exception e)
+            {
+                Console.Write("Error Sending Message: ");
+
+                if (e is SocketException)
+                {
+                    Console.WriteLine("Couldn't Access Port. " + e.Message);
+                    throw e;
+                }
+                else if (e is ObjectDisposedException)
+                {
+                    Console.WriteLine("Connection closed. Restarting...");
+                    Connect();
+                }
+                else
+                {
+                    Console.WriteLine("Unknown Error: " + e.Message);
+
+                }
+
+            }
         }
 
         //Main running thread of program.
         static async Task Main(string[] args)
         {
-            // Build a config object, using env vars and JSON providers.
-            IConfiguration config = new ConfigurationBuilder()
-                .AddIniFile("appsettings.ini")
-                .Build();
+            IPEndPoint ipEndPoint = null;
+            UdpClient client = null;
             try
             {
-                // Get values from the config given their key and their target type.
-                settings = config.Get<Settings>();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Invalid Configuration File!");
-                Console.WriteLine(e.Message);
-                return;
-            }
-            if (!settings.DISABLE_APP_CHECK)
-            {
-                int forzaProcesses = Process.GetProcessesByName("ForzaHorizon 5").Length;
-                forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length;
-                forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length;
-                Process[] DSX = Process.GetProcessesByName("DualSenseX");
-                Process[] cur = Process.GetProcesses();
-                while (forzaProcesses == 0 || DSX.Length == 0)
+                // Build a config object, using env vars and JSON providers.
+                IConfiguration config = new ConfigurationBuilder()
+                    .AddIniFile("appsettings.ini")
+                    .Build();
+                try
                 {
-                    if (forzaProcesses == 0)
-                    {
-                        Console.WriteLine("No Running Instances of Forza found. Waiting... ");
-
-                    }
-                    else if (DSX.Length == 0)
-                    {
-                        Console.WriteLine("No Running Instances of DualSenseX found. Waiting... ");
-                    }
-                    System.Threading.Thread.Sleep(1000);
-                    forzaProcesses += Process.GetProcessesByName("ForzaHorizon5").Length;
-                    forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length; //Guess at name
-                    forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length; //Guess at name
-                    DSX = Process.GetProcessesByName("DualSenseX");
+                    // Get values from the config given their key and their target type.
+                    settings = config.Get<Settings>();
                 }
-                Console.WriteLine("Forza and DSX are running. Let's Go!");
-            }
-            //Connect to DualSenseX
-            Connect();
-
-            //Connect to Forza
-            var ipEndPoint = new IPEndPoint(IPAddress.Loopback, FORZA_DATA_OUT_PORT);
-            var client = new UdpClient(FORZA_DATA_OUT_PORT);
-
-            Console.WriteLine("The Program is running. Please set the Forza data out to 127.0.0.1, port 5300 and the DualSenseX UDP Port to 6969");
-
-            //Main loop, go until killed
-            while (true)
-            {
-                //If Forza sends an update
-                await client.ReceiveAsync().ContinueWith(receive =>
+                catch (Exception e)
                 {
+                    Console.WriteLine("Invalid Configuration File!");
+                    Console.WriteLine(e.Message);
+                    return;
+                }
+                if (!settings.DISABLE_APP_CHECK)
+                {
+                    int forzaProcesses = Process.GetProcessesByName("ForzaHorizon 5").Length;
+                    forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length;
+                    forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length;
+                    Process[] DSX = Process.GetProcessesByName("DualSenseX");
+                    Process[] cur = Process.GetProcesses();
+                    while (forzaProcesses == 0 || DSX.Length == 0)
+                    {
+                        if (forzaProcesses == 0)
+                        {
+                            Console.WriteLine("No Running Instances of Forza found. Waiting... ");
+
+                        }
+                        else if (DSX.Length == 0)
+                        {
+                            Console.WriteLine("No Running Instances of DualSenseX found. Waiting... ");
+                        }
+                        System.Threading.Thread.Sleep(1000);
+                        forzaProcesses += Process.GetProcessesByName("ForzaHorizon5").Length;
+                        forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length; //Guess at name
+                        forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length; //Guess at name
+                        DSX = Process.GetProcessesByName("DualSenseX");
+                    }
+                    Console.WriteLine("Forza and DSX are running. Let's Go!");
+                }
+                //Connect to DualSenseX
+                Connect();
+
+                //Connect to Forza
+                ipEndPoint = new IPEndPoint(IPAddress.Loopback, settings.FORZA_PORT);
+                client = new UdpClient(settings.FORZA_PORT);
+
+                Console.WriteLine($"The Program is running. Please set the Forza data out to 127.0.0.1, port {settings.FORZA_PORT} and verify the DualSenseX UDP Port is set to {settings.DSX_PORT}");
+                UdpReceiveResult receive;
+                //Main loop, go until killed
+                while (true)
+                {
+                    //If Forza sends an update
+                    receive = await client.ReceiveAsync();
                     //parse data
-                    var resultBuffer = receive.Result.Buffer;
+                    var resultBuffer = receive.Buffer;
                     if (!AdjustToBufferType(resultBuffer.Length))
                     {
                         //  return;
@@ -291,10 +361,29 @@ namespace ForzaDualSense
                     //Process and send data to DualSenseX
                     SendData(data);
 
-                });
+                }
+
             }
+            catch (Exception e)
+            {
+                Console.WriteLine("Application encountered an exception: " + e.Message);
+            }
+            finally
+            {
+                if (client != null)
+                {
+                    client.Close();
+                    client.Dispose();
+                }
+                if (senderClient != null)
+                {
+                    senderClient.Close();
+                    senderClient.Dispose();
+                }
 
 
+            }
+            return;
 
         }
 
