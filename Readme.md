@@ -22,9 +22,17 @@ If you feel your modifications are better, please sumbit them via a PR request. 
 
 In Forza, under HUD turn on the UDP data out, with an IP of 127.0.0.1 and a port of 5300.
 
-In DualSenseX under the controller settings, set the UDP port to 6750.
+In DualSenseX under the controller settings, set the UDP port to 6969(Current default).
 
 It should work.
+
+## Running Release
+
+Download the Release from the releases page. Extract the Zip folder to a preferred location. Run the Executable to enjoy adaptive triggers on Forza!
+
+## appsettings.ini
+
+There is a settings file in the release. You can change the settings to your preference.
 
 ## Running From Source
 
