@@ -1,10 +1,21 @@
 {
   "version": 2,
-  "dgSpecHash": "NJr7WS059Q8WbrdY4EtoxJAIUOrEVhfi0+wN+ErNpvGOh4j6rGmrV+feRKx15NunZURVwwj7k/4wmc6frpG1xQ==",
+  "dgSpecHash": "ae2FDlpqPWTG986RLdP/D7pIAFCfA0x4XhVdhYU/Rj1PNnhjnK278YRqdOrsbiVG8qW4aZ+xzMRmeIXWhFl0RQ==",
   "success": true,
   "projectFilePath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\patma\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512"
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration\\6.0.0\\microsoft.extensions.configuration.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\6.0.0\\microsoft.extensions.configuration.abstractions.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.binder\\6.0.0\\microsoft.extensions.configuration.binder.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.environmentvariables\\6.0.0\\microsoft.extensions.configuration.environmentvariables.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.fileextensions\\6.0.0\\microsoft.extensions.configuration.fileextensions.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.ini\\6.0.0\\microsoft.extensions.configuration.ini.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.fileproviders.abstractions\\6.0.0\\microsoft.extensions.fileproviders.abstractions.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.fileproviders.physical\\6.0.0\\microsoft.extensions.fileproviders.physical.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.filesystemglobbing\\6.0.0\\microsoft.extensions.filesystemglobbing.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.primitives\\6.0.0\\microsoft.extensions.primitives.6.0.0.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512"
   ],
   "logs": []
 }

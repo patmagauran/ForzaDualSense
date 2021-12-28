@@ -15,3 +15,14 @@ C:\Data\Development\ForzaDualSense\ForzaDualSense\obj\Debug\net6.0\ForzaDualSens
 C:\Data\Development\ForzaDualSense\ForzaDualSense\obj\Debug\net6.0\ref\ForzaDualSense.dll
 C:\Data\Development\ForzaDualSense\ForzaDualSense\obj\Debug\net6.0\ForzaDualSense.pdb
 C:\Data\Development\ForzaDualSense\ForzaDualSense\obj\Debug\net6.0\ForzaDualSense.genruntimeconfig.cache
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\appsettings.ini
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Abstractions.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Binder.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Ini.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Physical.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.FileSystemGlobbing.dll
+C:\Data\Development\ForzaDualSense\ForzaDualSense\bin\Debug\net6.0\Microsoft.Extensions.Primitives.dll

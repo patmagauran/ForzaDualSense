@@ -4,23 +4,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 
 namespace ForzaDualSense
 {
     class Program
     {
-        private const float GRIP_LOSS_VAL = 0.5f; //The point at which the brake will begin to become choppy
-        private const int MAX_BRAKE_VIBRATION = 35; //The maximum brake frequency in Hz (avoid over 40). COrrelates to better grip
-        private const float TURN_ACCEL_MOD = 0.5f; //How to scale turning acceleration in determining throttle stiffness.
-        private const float FORWARD_ACCEL_MOD = 1.0f;//How to scale Forward acceleration in determining throttle stiffness.
-        private const int MIN_BRAKE_STIFFNESS = 200; //On a scale of 1-200 with 1 being most stiff
-        private const int MAX_BRAKE_STIFFNESS = 1; //On a scale of 1-200 with 1 being most stiff
-        private const int BRAKE_VIBRATION_START = 20; //The position (0-255) at which the brake should feel engaged with low grip surfaces
-        private const int MAX_THROTTLE_RESISTANCE = 6; //The Maximum resistance on the throttle (0-7)
-        private const int MAX_BRAKE_RESISTANCE = 6;//The Maximum resistance on the Brake (0-7)
-        private const int MIN_THROTTLE_RESISTANCE = 1;//The Minimum resistance on the throttle (0-7)
-        private const int MIN_BRAKE_RESISTANCE = 1;//The Minimum resistance on the Brake (0-7)
-        private const int ACCELRATION_LIMIT = 10; //The upper end acceleration when calculating the throttle resistance. Any acceleration above this will be counted as this value when determining the throttle resistance.
+        static Settings settings = new Settings();
 
         //This sends the data to DualSenseX based on the input parsed data from Forza.
         //See DataPacket.cs for more details about what forza parameters can be accessed.
@@ -39,8 +30,8 @@ namespace ForzaDualSense
             //Set the updates for the right Trigger(Throttle)
             p.instructions[2].type = InstructionType.TriggerUpdate;
             //It should probably always be uniformly stiff
-            float avgAccel = (float)Math.Sqrt((TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
-            resistance = (int)Math.Floor(Map(avgAccel, 0, ACCELRATION_LIMIT, MIN_THROTTLE_RESISTANCE, MAX_THROTTLE_RESISTANCE));
+            float avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
+            resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_THROTTLE_RESISTANCE, settings.MAX_THROTTLE_RESISTANCE));
 
             p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, resistance };
 
@@ -48,7 +39,7 @@ namespace ForzaDualSense
             //Update the left(Brake) trigger
             p.instructions[0].type = InstructionType.TriggerUpdate;
             //By default, Increasingly resistant to force
-            resistance = (int)Math.Floor(Map(data.Brake, 0, 1, MIN_BRAKE_RESISTANCE, MAX_BRAKE_RESISTANCE));
+            resistance = (int)Math.Floor(Map(data.Brake, 0, 1, settings.MIN_BRAKE_RESISTANCE, settings.MAX_BRAKE_RESISTANCE));
 
             p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, resistance };
 
@@ -63,13 +54,13 @@ namespace ForzaDualSense
 
             }
             //Some grip lost, begin to vibrate according to the amount of grip lost
-            else if (combinedTireSlip > GRIP_LOSS_VAL)
+            else if (combinedTireSlip > settings.GRIP_LOSS_VAL)
             {
-                int freq = MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, GRIP_LOSS_VAL, 1, 0, MAX_BRAKE_VIBRATION));
-                resistance = MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 1, MAX_BRAKE_STIFFNESS, MIN_BRAKE_STIFFNESS));
+                int freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
+                resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 1, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
 
                 //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
-                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, resistance, BRAKE_VIBRATION_START, 0, 0, 0, 0 };
+                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, resistance, settings.BRAKE_VIBRATION_START, 0, 0, 0, 0 };
 
             }
 
@@ -221,7 +212,7 @@ namespace ForzaDualSense
         static void Connect()
         {
             senderClient = new UdpClient();
-            endPoint = new IPEndPoint(Triggers.localhost, 6750);
+            endPoint = new IPEndPoint(Triggers.localhost, 6969);
         }
         //Send Data to DualSenseX
         static void Send(Packet data)
@@ -233,7 +224,47 @@ namespace ForzaDualSense
         //Main running thread of program.
         static async Task Main(string[] args)
         {
-            #region udp stuff
+            // Build a config object, using env vars and JSON providers.
+            IConfiguration config = new ConfigurationBuilder()
+                .AddIniFile("appsettings.ini")
+                .Build();
+            try
+            {
+                // Get values from the config given their key and their target type.
+                settings = config.Get<Settings>();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Invalid Configuration File!");
+                Console.WriteLine(e.Message);
+                return;
+            }
+            if (!settings.DISABLE_APP_CHECK)
+            {
+                int forzaProcesses = Process.GetProcessesByName("ForzaHorizon 5").Length;
+                forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length;
+                forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length;
+                Process[] DSX = Process.GetProcessesByName("DualSenseX");
+                Process[] cur = Process.GetProcesses();
+                while (forzaProcesses == 0 || DSX.Length == 0)
+                {
+                    if (forzaProcesses == 0)
+                    {
+                        Console.WriteLine("No Running Instances of Forza found. Waiting... ");
+
+                    }
+                    else if (DSX.Length == 0)
+                    {
+                        Console.WriteLine("No Running Instances of DualSenseX found. Waiting... ");
+                    }
+                    System.Threading.Thread.Sleep(1000);
+                    forzaProcesses += Process.GetProcessesByName("ForzaHorizon5").Length;
+                    forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length; //Guess at name
+                    forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length; //Guess at name
+                    DSX = Process.GetProcessesByName("DualSenseX");
+                }
+                Console.WriteLine("Forza and DSX are running. Let's Go!");
+            }
             //Connect to DualSenseX
             Connect();
 
@@ -241,7 +272,7 @@ namespace ForzaDualSense
             var ipEndPoint = new IPEndPoint(IPAddress.Loopback, FORZA_DATA_OUT_PORT);
             var client = new UdpClient(FORZA_DATA_OUT_PORT);
 
-            Console.WriteLine("The Program is running. Please set the Forza data out to 127.0.0.1, port 5300 and the DualSenseX UDP Port to 6750");
+            Console.WriteLine("The Program is running. Please set the Forza data out to 127.0.0.1, port 5300 and the DualSenseX UDP Port to 6969");
 
             //Main loop, go until killed
             while (true)
@@ -264,7 +295,6 @@ namespace ForzaDualSense
             }
 
 
-            #endregion
 
         }
 
