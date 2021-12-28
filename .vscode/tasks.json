@@ -19,6 +19,8 @@
             "type": "process",
             "args": [
                 "publish",
+                "--configuration",
+                "release",
                 "${workspaceFolder}/ForzaDualSense/ForzaDualSense.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"

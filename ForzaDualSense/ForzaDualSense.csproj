@@ -5,9 +5,9 @@
     <TargetFramework>net6.0</TargetFramework>
 <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
 
-    <SelfContained>true</SelfContained>
+    <SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
   </PropertyGroup>
 <ItemGroup>
     <Content Include="appsettings.ini">
