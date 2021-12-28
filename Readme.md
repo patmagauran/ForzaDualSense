@@ -2,7 +2,7 @@
 
 This is a program to control lights and adaptive triggers on a DualSense 5 controller using DualSenseX for compatible Forza Games.
 
-**NOTE:** This is currently in the Proof-Of-Concept stage. It should work and provide some adaptiveness but it will not be similar to a driving simulator. I welcome people to help make needed adjustments(See below for more information).
+**NOTE:** This is currently in the alpha stage. It works well and provides decent feedback via the adaptive triggers. However it is not perfect and definetly has room for improvement. I welcome people to help make needed adjustments(See below for more information).
 
 ## Adjusting / Modifying
 
@@ -22,7 +22,7 @@ If you feel your modifications are better, please sumbit them via a PR request. 
 
 In Forza, under HUD turn on the UDP data out, with an IP of 127.0.0.1 and a port of 5300.
 
-In DualSenseX under the controller settings, set the UDP port to 6969(Current default).
+In DualSenseX under the controller settings, set the UDP port to your preference. The program should automatically use what is set.
 
 It should work.
 
