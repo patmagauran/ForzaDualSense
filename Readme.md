@@ -23,7 +23,8 @@ If you feel your modifications are better, please sumbit them via a PR request. 
 In Forza, under HUD turn on the UDP data out, with an IP of 127.0.0.1 and a port of 5300.
 ![image](https://user-images.githubusercontent.com/10986886/147594037-02f9f215-d59f-4e09-9fb4-131cacff2615.png)
 
-In DualSenseX under the controller settings, set the UDP port to your preference. The program should automatically use what is set.
+In DualSenseX under the controller settings, set the UDP port to your preference and ensure the UDP Port Listener is enabled. The program should automatically use what is set.
+<img width="1250" alt="image" src="https://user-images.githubusercontent.com/10986886/147705786-8d2930fe-6050-48a0-8491-e8318486f426.png">
 
 It should work.
 
