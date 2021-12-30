@@ -13,7 +13,7 @@ namespace ForzaDualSense
     class Program
     {
         static Settings settings = new Settings();
-
+        static bool verbose = false;
         //This sends the data to DualSenseX based on the input parsed data from Forza.
         //See DataPacket.cs for more details about what forza parameters can be accessed.
         //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
@@ -36,7 +36,10 @@ namespace ForzaDualSense
 
             p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, resistance };
 
-
+            if (verbose)
+            {
+                Console.WriteLine($"Average Acceleration: {avgAccel}; Throttle Resistance: {resistance}");
+            }
             //Update the left(Brake) trigger
             p.instructions[0].type = InstructionType.TriggerUpdate;
             //By default, Increasingly resistant to force
@@ -46,13 +49,19 @@ namespace ForzaDualSense
 
             //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
             float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
-
+            if (verbose)
+            {
+                Console.WriteLine($"Brake: {data.Brake}; Brake Resistance: {resistance}; Tire Slip: {combinedTireSlip}");
+            }
             //All grip lost, trigger should be loose
             if (combinedTireSlip > 1)
             {
                 //Set left trigger to normal mode(i.e no resistance)
                 p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
-
+                if (verbose)
+                {
+                    Console.WriteLine($"Setting Brake to no resistance");
+                }
             }
             //Some grip lost, begin to vibrate according to the amount of grip lost
             else if (combinedTireSlip > settings.GRIP_LOSS_VAL)
@@ -62,6 +71,10 @@ namespace ForzaDualSense
 
                 //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
                 p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, freq, resistance, settings.BRAKE_VIBRATION_START, 0, 0, 0, 0 };
+                if (verbose)
+                {
+                    Console.WriteLine($"Setting Brake to vibration mode with freq: {freq}, Resistance: {resistance}");
+                }
 
             }
 
@@ -69,7 +82,10 @@ namespace ForzaDualSense
             p.instructions[1].type = InstructionType.RGBUpdate;
             //Currently registers intensity on the green channel based on engnine RPM as a percantage of the maxium. 
             p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor((data.CurrentEngineRpm / data.EngineMaxRpm) * 255), 0 };
-
+            if (verbose)
+            {
+                Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
+            }
             //Send the commands to DualSenseX
             Send(p);
 
@@ -259,11 +275,26 @@ namespace ForzaDualSense
         //Send Data to DualSenseX
         static void Send(Packet data)
         {
-            var RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
-
+            if (verbose)
+            {
+                Console.WriteLine($"Converting Message to JSON");
+            }
+            byte[] RequestData = Encoding.ASCII.GetBytes(Triggers.PacketToJson(data));
+            if (verbose)
+            {
+                Console.WriteLine($"{Encoding.ASCII.GetString(RequestData)}");
+            }
             try
             {
+                if (verbose)
+                {
+                    Console.WriteLine($"Sending Message to DSX...");
+                }
                 senderClient.Send(RequestData, RequestData.Length);
+                if (verbose)
+                {
+                    Console.WriteLine($"Message sent to DSX");
+                }
             }
             catch (Exception e)
             {
@@ -295,6 +326,28 @@ namespace ForzaDualSense
             UdpClient client = null;
             try
             {
+                foreach (string arg in args)
+                {
+                    switch (arg)
+                    {
+                        case "-v":
+                            {
+                                Console.WriteLine("ForzaDualSense Version 0.2.1");
+                                return;
+                            }
+                        case "--verbose":
+                            {
+                                Console.WriteLine("Verbose Mode Enabled!");
+                                verbose = true;
+                                break;
+                            }
+                        default:
+                            {
+
+                                break;
+                            }
+                    }
+                }
                 // Build a config object, using env vars and JSON providers.
                 IConfiguration config = new ConfigurationBuilder()
                     .AddIniFile("appsettings.ini")
@@ -350,6 +403,10 @@ namespace ForzaDualSense
                 {
                     //If Forza sends an update
                     receive = await client.ReceiveAsync();
+                    if (verbose)
+                    {
+                        Console.WriteLine("recieved Message from Forza!");
+                    }
                     //parse data
                     var resultBuffer = receive.Buffer;
                     if (!AdjustToBufferType(resultBuffer.Length))
@@ -357,7 +414,10 @@ namespace ForzaDualSense
                         //  return;
                     }
                     data = ParseData(resultBuffer);
-
+                    if (verbose)
+                    {
+                        Console.WriteLine("Data Parsed");
+                    }
                     //Process and send data to DualSenseX
                     SendData(data);
 
@@ -370,6 +430,10 @@ namespace ForzaDualSense
             }
             finally
             {
+                if (verbose)
+                {
+                    Console.WriteLine($"Cleaning Up");
+                }
                 if (client != null)
                 {
                     client.Close();
@@ -380,7 +444,10 @@ namespace ForzaDualSense
                     senderClient.Close();
                     senderClient.Dispose();
                 }
-
+                if (verbose)
+                {
+                    Console.WriteLine($"Cleanup Finished. Exiting...");
+                }
 
             }
             return;
