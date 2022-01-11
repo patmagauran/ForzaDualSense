@@ -7,33 +7,55 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using CsvHelper;
+using System.Globalization;
 
 namespace ForzaDualSense
 {
     class Program
     {
+        public const String VERSION = "0.2.2";
         static Settings settings = new Settings();
         static bool verbose = false;
+        static bool logToCsv = false;
+        static String csvFileName = "";
+        public const int CSV_BUFFER_LENGTH = 120;
         //This sends the data to DualSenseX based on the input parsed data from Forza.
         //See DataPacket.cs for more details about what forza parameters can be accessed.
         //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
         //Also see the Test Function below to see examples about those commands
-        static void SendData(DataPacket data)
+        static void SendData(DataPacket data, CsvWriter csv)
         {
             Packet p = new Packet();
-
+            CsvData csvRecord = new CsvData();
             //Set the controller to do this for
             int controllerIndex = 0;
             int resistance = 0;
             //Initialize our array of instructions
             p.instructions = new Instruction[4];
-
+            if (logToCsv)
+            {
+                csvRecord.time = data.TimestampMS;
+                csvRecord.AccelerationX = data.AccelerationX;
+                csvRecord.AccelerationY = data.AccelerationY;
+                csvRecord.AccelerationZ = data.AccelerationZ;
+                csvRecord.Brake = data.Brake;
+                csvRecord.TireCombinedSlipFrontLeft = data.TireCombinedSlipFrontLeft;
+                csvRecord.TireCombinedSlipFrontRight = data.TireCombinedSlipFrontRight;
+                csvRecord.TireCombinedSlipRearLeft = data.TireCombinedSlipRearLeft;
+                csvRecord.TireCombinedSlipRearRight = data.TireCombinedSlipRearRight;
+                csvRecord.CurrentEngineRpm = data.CurrentEngineRpm;
+            }
             //Set the updates for the right Trigger(Throttle)
             p.instructions[2].type = InstructionType.TriggerUpdate;
             //It should probably always be uniformly stiff
             float avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
             resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_THROTTLE_RESISTANCE, settings.MAX_THROTTLE_RESISTANCE));
-
+            if (logToCsv)
+            {
+                csvRecord.AverageAcceleration = avgAccel;
+                csvRecord.ThrottleResistance = resistance;
+            }
             p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, resistance };
 
             if (verbose)
@@ -53,6 +75,7 @@ namespace ForzaDualSense
             {
                 Console.WriteLine($"Brake: {data.Brake}; Brake Resistance: {resistance}; Tire Slip: {combinedTireSlip}");
             }
+            int freq = 0;
             //All grip lost, trigger should be loose
             if (combinedTireSlip > 1)
             {
@@ -66,7 +89,7 @@ namespace ForzaDualSense
             //Some grip lost, begin to vibrate according to the amount of grip lost
             else if (combinedTireSlip > settings.GRIP_LOSS_VAL)
             {
-                int freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
+                freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
                 resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 1, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
 
                 //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
@@ -77,7 +100,12 @@ namespace ForzaDualSense
                 }
 
             }
-
+            if (logToCsv)
+            {
+                csvRecord.BrakeResistance = resistance;
+                csvRecord.combinedTireSlip = combinedTireSlip;
+                csvRecord.BrakeVibrationFrequency = freq;
+            }
             //Update the light bar
             p.instructions[1].type = InstructionType.RGBUpdate;
             //Currently registers intensity on the green channel based on engnine RPM as a percantage of the maxium. 
@@ -85,6 +113,12 @@ namespace ForzaDualSense
             if (verbose)
             {
                 Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
+
+            }
+            if (logToCsv)
+            {
+                csv.WriteRecord(csvRecord);
+                csv.NextRecord();
             }
             //Send the commands to DualSenseX
             Send(p);
@@ -324,21 +358,38 @@ namespace ForzaDualSense
         {
             IPEndPoint ipEndPoint = null;
             UdpClient client = null;
+            StreamWriter writer = null;
+            CsvWriter csv = null;
             try
             {
-                foreach (string arg in args)
+                for (int i = 0; i < args.Length; i++)
+
                 {
+                    string arg = args[i];
+
                     switch (arg)
                     {
                         case "-v":
                             {
-                                Console.WriteLine("ForzaDualSense Version 0.2.1");
+                                Console.WriteLine($"ForzaDualSense Version {VERSION}");
                                 return;
                             }
                         case "--verbose":
                             {
                                 Console.WriteLine("Verbose Mode Enabled!");
                                 verbose = true;
+                                break;
+                            }
+                        case "--csv":
+                            {
+                                logToCsv = true;
+                                i++;
+                                if (i >= args.Length)
+                                {
+                                    Console.WriteLine("No Path Entered for Csv file output!! Exiting");
+                                    return;
+                                }
+                                csvFileName = args[i];
                                 break;
                             }
                         default:
@@ -398,6 +449,24 @@ namespace ForzaDualSense
 
                 Console.WriteLine($"The Program is running. Please set the Forza data out to 127.0.0.1, port {settings.FORZA_PORT} and verify the DualSenseX UDP Port is set to {settings.DSX_PORT}");
                 UdpReceiveResult receive;
+                if (logToCsv)
+                {
+                    try
+                    {
+                        writer = new StreamWriter(csvFileName);
+                        csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                        csv.WriteHeader<CsvData>();
+                        csv.NextRecord();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Failed to open csv File output. Ensure it is a valid path!");
+                        throw e;
+                    }
+                }
+
+                int count = 0;
+
                 //Main loop, go until killed
                 while (true)
                 {
@@ -418,10 +487,16 @@ namespace ForzaDualSense
                     {
                         Console.WriteLine("Data Parsed");
                     }
-                    //Process and send data to DualSenseX
-                    SendData(data);
 
+                    //Process and send data to DualSenseX
+                    SendData(data, csv);
+                    if (logToCsv && count++ > CSV_BUFFER_LENGTH)
+                    {
+                        writer.Flush();
+                        count = 0;
+                    }
                 }
+
 
             }
             catch (Exception e)
@@ -444,6 +519,17 @@ namespace ForzaDualSense
                     senderClient.Close();
                     senderClient.Dispose();
                 }
+                if (csv != null)
+                {
+                    csv.Dispose();
+                }
+                if (writer != null)
+                {
+                    writer.Flush();
+                    writer.Close();
+
+                }
+
                 if (verbose)
                 {
                     Console.WriteLine($"Cleanup Finished. Exiting...");

@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "034Evy9ZfWhCekTxMvOOHA688PUpXiSI7QHg+L/lr5o11xESUrVkPpTIOV72h+Jn6hRu2h6OI7vZYhvIJyNNCw==",
+  "dgSpecHash": "u6+aSbCixUqt5+Y4Vyq+1t844RxyF57SrsYYlYeskYeBavNtRfwdt0hmIva7Xo2quUpIKAwA4341aBHcOgmWDQ==",
   "success": true,
   "projectFilePath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\patma\\.nuget\\packages\\csvhelper\\27.2.1\\csvhelper.27.2.1.nupkg.sha512",
     "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration\\6.0.0\\microsoft.extensions.configuration.6.0.0.nupkg.sha512",
     "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\6.0.0\\microsoft.extensions.configuration.abstractions.6.0.0.nupkg.sha512",
     "C:\\Users\\patma\\.nuget\\packages\\microsoft.extensions.configuration.binder\\6.0.0\\microsoft.extensions.configuration.binder.6.0.0.nupkg.sha512",
