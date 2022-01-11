@@ -15,7 +15,10 @@ namespace ForzaDualSense
         public float AverageAcceleration { get; set; }
         public float CurrentEngineRpm { get; set; }
         public int ThrottleResistance { get; set; }
+        public int ThrottleResistance_filtered { get; set; }
         public int BrakeResistance { get; set; }
+        public int BrakeResistance_filtered { get; set; }
         public int BrakeVibrationFrequency { get; set; }
+        public int BrakeVibrationFrequency_freq { get; set; }
     }
 }
