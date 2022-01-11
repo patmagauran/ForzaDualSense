@@ -99,7 +99,7 @@ namespace ForzaDualSense
                 lastBrakeResistance = filteredResistance;
                 if (filteredFreq <= settings.MIN_BRAKE_VIBRATION)
                 {
-                    p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, filteredResistance };
+                    p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 0 };
 
                 }
                 else
