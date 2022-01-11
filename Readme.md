@@ -4,6 +4,8 @@ This is a program to control lights and adaptive triggers on a DualSense 5 contr
 
 **NOTE:** This is currently in the alpha stage. It works well and provides decent feedback via the adaptive triggers. However it is not perfect and definetly has room for improvement. I welcome people to help make needed adjustments(See below for more information).
 
+**WARNING:** Since we do not have exact specifications of the commands sent to the controller, it is possible that certain values may be out of specification or in the not-reccomended categories. This could cause damage to controllers. Although I use this program without issue, I will not be held liable for damage to your controller due to it's use.
+
 ## Adjusting / Modifying
 
 This program is written in very simple C#. If you do not know C#, it should not be hard to learn the necessary parts. If you do not know any programming, it may be more difficult, but I have left the relevant code very well documented.

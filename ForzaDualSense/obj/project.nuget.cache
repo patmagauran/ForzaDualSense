@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "jUWxRAQvZJvbaOJlZiKci+kJPN64iEEtyxMtsbF6qY3eEaa2GiU2z1qkSfP4TPOWlrQHP8NDjFcZKJuscIdnjQ==",
+  "dgSpecHash": "u6+aSbCixUqt5+Y4Vyq+1t844RxyF57SrsYYlYeskYeBavNtRfwdt0hmIva7Xo2quUpIKAwA4341aBHcOgmWDQ==",
   "success": true,
   "projectFilePath": "C:\\Data\\Development\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
   "expectedPackageFiles": [
@@ -19,7 +19,8 @@
     "C:\\Users\\patma\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
     "C:\\Users\\patma\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\6.0.1\\microsoft.netcore.app.runtime.win-x64.6.0.1.nupkg.sha512",
     "C:\\Users\\patma\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\6.0.1\\microsoft.windowsdesktop.app.runtime.win-x64.6.0.1.nupkg.sha512",
-    "C:\\Users\\patma\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.1\\microsoft.aspnetcore.app.runtime.win-x64.6.0.1.nupkg.sha512"
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\6.0.1\\microsoft.aspnetcore.app.runtime.win-x64.6.0.1.nupkg.sha512",
+    "C:\\Users\\patma\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\6.0.1\\microsoft.netcore.app.crossgen2.win-x64.6.0.1.nupkg.sha512"
   ],
   "logs": []
 }
