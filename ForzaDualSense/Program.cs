@@ -31,7 +31,7 @@ namespace ForzaDualSense
         {
             Packet p = new Packet();
             CsvData csvRecord = new CsvData();
-            //Set the controller to do this for
+            //Set the controller to do this fortri
             int controllerIndex = 0;
             int resistance = 0;
             int filteredResistance = 0;
