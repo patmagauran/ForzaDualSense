@@ -31,7 +31,7 @@ namespace ForzaDualSense
         {
             Packet p = new Packet();
             CsvData csvRecord = new CsvData();
-            //Set the controller to do this fortri
+            //Set the controller to do this for
             int controllerIndex = 0;
             int resistance = 0;
             int filteredResistance = 0;
@@ -89,7 +89,7 @@ namespace ForzaDualSense
             // }
             // //Some grip lost, begin to vibrate according to the amount of grip lost
             // else 
-            if (combinedTireSlip > settings.GRIP_LOSS_VAL && data.Brake > settings.BRAKE_VIBRATION__MODE_START)
+            if (combinedTireSlip < settings.GRIP_LOSS_VAL && data.Brake < settings.BRAKE_VIBRATION__MODE_START)
             {
                 freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
                 resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 255, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
