@@ -14,7 +14,7 @@ namespace ForzaDualSense
 {
     class Program
     {
-        public const String VERSION = "0.2.2";
+        public const String VERSION = "0.3.0";
         static Settings settings = new Settings();
         static bool verbose = false;
         static bool logToCsv = false;
