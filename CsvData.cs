@@ -1,4 +1,4 @@
-namespace ForzaDualSense
+namespace ForzaDSX
 {
     public class CsvData
     {

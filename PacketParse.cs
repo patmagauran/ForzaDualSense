@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ForzaDualSense
+namespace ForzaDSX
 {
     public static class PacketParse
     {

@@ -647,11 +647,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
-      "projectName": "ForzaDualSense",
-      "projectPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
+      "projectUniqueName": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDSX.csproj",
+      "projectName": "ForzaDSX",
+      "projectPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDSX.csproj",
       "packagesPath": "C:\\Users\\apple\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\obj\\",
+      "outputPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\apple\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VZPeMqMb9h8QSvu9gR9R+Qdg5mm4JnQxU0yOSw2TMJofGkEv/s4mI+itb/s8eP8ZNoTGqtB239PoCEZh4CDt5Q==",
+  "dgSpecHash": "l+gEeWgdxZn5Z1sVXKS+rlSq+NQmCFSB990pO37qzpngiCLcYv3hyG3/NcVN7++BugDMrX6K7fB+IXpVWsD1jg==",
   "success": true,
-  "projectFilePath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
+  "projectFilePath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDSX.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\apple\\.nuget\\packages\\csvhelper\\27.2.1\\csvhelper.27.2.1.nupkg.sha512",
     "C:\\Users\\apple\\.nuget\\packages\\microsoft.extensions.configuration\\6.0.0\\microsoft.extensions.configuration.6.0.0.nupkg.sha512",
