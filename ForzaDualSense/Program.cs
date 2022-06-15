@@ -450,9 +450,10 @@ namespace ForzaDualSense
                     int forzaProcesses = Process.GetProcessesByName("ForzaHorizon 5").Length;
                     forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length;
                     forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length;
-                    Process[] DSX = Process.GetProcessesByName("DualSenseX");
+                    Process[] DSX = Process.GetProcessesByName("DSX");
+                    Process[] DSX_2 = Process.GetProcessesByName("DualsenseX");
                     Process[] cur = Process.GetProcesses();
-                    while (forzaProcesses == 0 || DSX.Length == 0)
+                    while (forzaProcesses == 0 || DSX.Length+DSX_2.Length == 0)
                     {
                         if (forzaProcesses == 0)
                         {
@@ -467,7 +468,9 @@ namespace ForzaDualSense
                         forzaProcesses += Process.GetProcessesByName("ForzaHorizon5").Length;
                         forzaProcesses += Process.GetProcessesByName("ForzaHorizon4").Length; //Guess at name
                         forzaProcesses += Process.GetProcessesByName("ForzaMotorsport7").Length; //Guess at name
-                        DSX = Process.GetProcessesByName("DualSenseX");
+                        // DSX = "DSX" or "DualSenseX"
+                        DSX = Process.GetProcessesByName("DSX");
+                        DSX_2 = Process.GetProcessesByName("DualsenseX");
                     }
                     Console.WriteLine("Forza and DSX are running. Let's Go!");
                 }
