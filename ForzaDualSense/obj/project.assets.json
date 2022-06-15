@@ -642,26 +642,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\cosmii02\\.nuget\\packages\\": {}
+    "C:\\Users\\apple\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\cosmii02\\source\\repos\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
+      "projectUniqueName": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
       "projectName": "ForzaDualSense",
-      "projectPath": "C:\\Users\\cosmii02\\source\\repos\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
-      "packagesPath": "C:\\Users\\cosmii02\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\cosmii02\\source\\repos\\ForzaDualSense\\ForzaDualSense\\obj\\",
+      "projectPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\ForzaDualSense.csproj",
+      "packagesPath": "C:\\Users\\apple\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\apple\\RiderProjects\\ForzaDualSense\\ForzaDualSense\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\cosmii02\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\apple\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net6.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -714,19 +712,19 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-            "version": "[6.0.3, 6.0.3]"
+            "version": "[6.0.5, 6.0.5]"
           },
           {
             "name": "Microsoft.NETCore.App.Crossgen2.win-x64",
-            "version": "[6.0.3, 6.0.3]"
+            "version": "[6.0.5, 6.0.5]"
           },
           {
             "name": "Microsoft.NETCore.App.Runtime.win-x64",
-            "version": "[6.0.3, 6.0.3]"
+            "version": "[6.0.5, 6.0.5]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-            "version": "[6.0.3, 6.0.3]"
+            "version": "[6.0.5, 6.0.5]"
           }
         ],
         "frameworkReferences": {
@@ -734,7 +732,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.201\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.300\\RuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {
