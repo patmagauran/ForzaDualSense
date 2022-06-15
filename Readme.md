@@ -1,3 +1,5 @@
+This version is forzadualsense mod with extra sensitivity for more effectiveness. In my opinion the author's config was so unresponsive that all it did was make the throttle stiff 100% of time and make the game experience worse :(
+
 ## Intro
 
 This is a program to control lights and adaptive triggers on a DualSense 5 controller using DualSenseX for compatible Forza Games.
