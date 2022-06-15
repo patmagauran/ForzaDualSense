@@ -1,0 +1,3 @@
+C:\Users\apple\Desktop\ForzaDualSense.pdb
+C:\Users\apple\Desktop\appsettings.ini
+C:\Users\apple\Desktop\ForzaDualSense.exe
