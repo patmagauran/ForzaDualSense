@@ -1,4 +1,4 @@
-This version is forzadualsense mod with extra sensitivity for more effectiveness. In my opinion the author's config was so unresponsive that all it did was make the throttle stiff 100% of time and make the game experience worse :(
+This version is forzadualsense mod with extra sensitivity for higher immersiveness. In my opinion the author's config was so unresponsive that all it did was make the throttle stiff 100% of time and make the game experience worse :(
 
 ## Intro
 
