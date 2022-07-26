@@ -23,7 +23,7 @@ namespace ForzaDSX
         static int lastThrottleResistance = 1;
         static int lastBrakeResistance = 200;
         static int lastBrakeFreq = 0;
-        //This sends the data to DualSenseX based on the input parsed data from Forza.
+        //This sends the data to DSX based on the input parsed data from Forza.
         //See DataPacket.cs for more details about what forza parameters can be accessed.
         //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
         //Also see the Test Function below to see examples about those commands
