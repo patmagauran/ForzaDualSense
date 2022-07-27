@@ -45,8 +45,8 @@ There is a settings file in the release. You can change the settings to your pre
 
 1. Install the .Net Core 6.0 SDK (x64 version) from here: [https://dotnet.microsoft.com/en-us/download/dotnet/6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 2. Clone this repository with git
-3. While in the top level of this repository, run `dotnet run --project ForzaDualSense`.
-   - Top level here refers to the main directory of the repository such that the subdirectories are `.vscode` and `ForzaDualSense`
+3. While in the top level of this repository, run `dotnet run --project ForzaDSX`.
+   - Top level here refers to the main directory of the repository such that the subdirectories are `.vscode` and `ForzaDSX`
 
 ## Thanks and Credits
 
