@@ -14,27 +14,49 @@ namespace ForzaDSX
 {
     class Program
     {
-        public const String VERSION = "0.3.0";
+        public const String VERSION = "0.3.1";
         static Settings settings = new Settings();
         static bool verbose = false;
         static bool logToCsv = false;
         static String csvFileName = "";
         public const int CSV_BUFFER_LENGTH = 120;
         static int lastThrottleResistance = 1;
-        static int lastBrakeResistance = 200;
+		static int lastThrottleFreq = 0;
+		static int lastBrakeResistance = 200;
         static int lastBrakeFreq = 0;
-        //This sends the data to DSX based on the input parsed data from Forza.
-        //See DataPacket.cs for more details about what forza parameters can be accessed.
-        //See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
-        //Also see the Test Function below to see examples about those commands
-        static void SendData(DataPacket data, CsvWriter csv)
+
+        static uint LastValidCarClass = 0;
+		static int LastValidCarCPI = 0;
+        static float MaxCPI = 255;
+
+		// Colors for Light Bar while in menus -> using car's PI colors from Forza
+        public static readonly uint CarClassD = 0;
+        public static readonly int[] ColorClassD = { 107, 185, 236 };
+        public static readonly uint CarClassC = 1;
+        public static readonly int[] ColorClassC = { 234, 202, 49 };
+        public static readonly uint CarClassB = 2;
+        public static readonly int[] ColorClassB = { 211, 90, 37 };
+        public static readonly uint CarClassA = 3;
+        public static readonly int[] ColorClassA = { 187, 59, 34 };
+        public static readonly uint CarClassS1 = 4;
+        public static readonly int[] ColorClassS1 = { 128, 54, 243 };
+        public static readonly uint CarClassS2 = 5;
+		public static readonly int[] ColorClassS2 = { 75, 88, 229 };
+
+		public static readonly int[] ColorClassX = { 105, 182, 72 };
+        
+
+		//This sends the data to DSX based on the input parsed data from Forza.
+		//See DataPacket.cs for more details about what forza parameters can be accessed.
+		//See the Enums at the bottom of this file for details about commands that can be sent to DualSenseX
+		//Also see the Test Function below to see examples about those commands
+		static void SendData(DataPacket data, CsvWriter csv)
         {
             Packet p = new Packet();
             CsvData csvRecord = new CsvData();
             //Set the controller to do this for
             int controllerIndex = 0;
-            int resistance = 0;
-            int filteredResistance = 0;
+            
             //Initialize our array of instructions
             p.instructions = new Instruction[4];
             if (logToCsv)
@@ -50,103 +72,245 @@ namespace ForzaDSX
                 csvRecord.TireCombinedSlipRearRight = data.TireCombinedSlipRearRight;
                 csvRecord.CurrentEngineRpm = data.CurrentEngineRpm;
             }
-            //Set the updates for the right Trigger(Throttle)
-            p.instructions[2].type = InstructionType.TriggerUpdate;
-            //It should probably always be uniformly stiff
-            float avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
-            resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_THROTTLE_RESISTANCE, settings.MAX_THROTTLE_RESISTANCE));
-            filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
-            if (logToCsv)
-            {
-                csvRecord.AverageAcceleration = avgAccel;
-                csvRecord.ThrottleResistance = resistance;
-                csvRecord.ThrottleResistance_filtered = filteredResistance;
-            }
-            lastThrottleResistance = filteredResistance;
-            p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, filteredResistance };
 
-            if (verbose)
-            {
-                Console.WriteLine($"Average Acceleration: {avgAccel}; Throttle Resistance: {filteredResistance}");
-            }
-            //Update the left(Brake) trigger
-            p.instructions[0].type = InstructionType.TriggerUpdate;
-            float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
-
-
-
+            /* Combined variables */
+            int resistance = 0;
+            int filteredResistance = 0;
+            float avgAccel = 0;
             int freq = 0;
             int filteredFreq = 0;
-            //All grip lost, trigger should be loose
-            // if (combinedTireSlip > 1)
-            // {
-            //     //Set left trigger to normal mode(i.e no resistance)
-            //     p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
-            //     if (verbose)
-            //     {
-            //         Console.WriteLine($"Setting Brake to no resistance");
-            //     }
-            // }
-            // //Some grip lost, begin to vibrate according to the amount of grip lost
-            // else 
-            if (combinedTireSlip < settings.GRIP_LOSS_VAL && data.Brake < settings.BRAKE_VIBRATION__MODE_START)
+
+            float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
+
+            uint currentClass = LastValidCarClass;
+            if (data.CarClass > 0)
             {
-                freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
-                resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 255, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
-                filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
-                filteredFreq = EWMA(freq, lastBrakeFreq, settings.EWMA_ALPHA_BRAKE_FREQ);
-                lastBrakeFreq = filteredFreq;
-                lastBrakeResistance = filteredResistance;
-                if (filteredFreq <= settings.MIN_BRAKE_VIBRATION)
+				LastValidCarClass = currentClass = data.CarClass;
+			}
+
+            int currentCPI = LastValidCarCPI;
+			if (data.CarPerformanceIndex > 0)
+			{
+				LastValidCarCPI = currentCPI = Math.Min((int)data.CarPerformanceIndex, 255);
+			}
+
+			// Right Trigger (index 2)
+			p.instructions[2].type = InstructionType.TriggerUpdate;
+
+            // Left Trigger
+			p.instructions[0].type = InstructionType.TriggerUpdate;
+
+            // Light Bar
+			p.instructions[1].type = InstructionType.RGBUpdate;
+
+			// No race = normal triggers
+			if (!data.IsRaceOn)
+            {
+				p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Normal, 0, 0 };
+				p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
+
+				#region Light Bar color
+				int CPIcolorR = 255;
+				int CPIcolorG = 255;
+				int CPIcolorB = 255;
+
+                float cpiRatio = currentCPI / MaxCPI;
+
+				if (currentClass <= CarClassD)
                 {
-                    p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 0 };
+					CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassD[0]);
+					CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassD[1]);
+					CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassD[2]);
+				}
+                else if (currentClass <= CarClassC)
+                {
+                    CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassC[0]);
+                    CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassC[1]);
+                    CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassC[2]);
+                }
+                else if (currentClass <= CarClassB)
+                {
+                    CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassB[0]);
+                    CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassB[1]);
+                    CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassB[2]);
+                }
+                else if (currentClass <= CarClassA)
+                {
+                    CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassA[0]);
+                    CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassA[1]);
+                    CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassA[2]);
+                }
+                else if (currentClass <= CarClassS1)
+                {
+                    CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassS1[0]);
+                    CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassS1[1]);
+                    CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassS1[2]);
+                }
+                else if (currentClass <= CarClassS2)
+                {
+                    CPIcolorR = (int)Math.Floor(cpiRatio * ColorClassS2[0]);
+                    CPIcolorG = (int)Math.Floor(cpiRatio * ColorClassS2[1]);
+                    CPIcolorB = (int)Math.Floor(cpiRatio * ColorClassS2[2]);
+                }
+                else
+				{
+					CPIcolorR = ColorClassX[0];
+					CPIcolorG = ColorClassX[1];
+					CPIcolorB = ColorClassX[2];
+				}
+
+				p.instructions[1].parameters = new object[] { controllerIndex, CPIcolorR, CPIcolorG, CPIcolorB };
+				#endregion
+
+				if (logToCsv)
+                {
+                    csvRecord.AverageAcceleration = 0;
+                    csvRecord.ThrottleResistance = 0;
+                    csvRecord.ThrottleResistance_filtered = 0;
+
+					csvRecord.BrakeResistance = resistance;
+					csvRecord.combinedTireSlip = combinedTireSlip;
+					csvRecord.BrakeVibrationFrequency = freq;
+					csvRecord.BrakeResistance_filtered = filteredResistance;
+					csvRecord.BrakeVibrationFrequency_freq = filteredFreq;
+				}
+
+                if (verbose)
+                {
+                    Console.WriteLine($"No race going on. Normal Triggers. Car's Class = {currentClass}; CPI = {currentCPI}; CPI Ratio = {cpiRatio}; Color [{CPIcolorR}, {CPIcolorG}, {CPIcolorB}]");
+                }
+            }
+            else
+            {
+				#region Right Trigger
+				//Set the updates for the right Trigger(Throttle)
+
+				avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
+
+				// If losing grip, start to "vibrate"
+				if (combinedTireSlip > settings.GRIP_LOSS_VAL)
+                {
+                    freq = settings.MAX_ACCEL_GRIPLOSS_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_ACCEL_GRIPLOSS_VIBRATION));
+					resistance = settings.MIN_ACCEL_GRIPLOSS_STIFFNESS - (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
+					//resistance = settings.MIN_ACCEL_GRIPLOSS_STIFFNESS - (int)Math.Floor(Map(data.Accelerator, 0, 255, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
+					filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
+                    filteredFreq = EWMA(freq, lastThrottleFreq, settings.EWMA_ALPHA_THROTTLE_FREQ);
+                    
+                    lastThrottleResistance = filteredResistance;
+                    lastThrottleFreq = filteredFreq;
+
+					if (filteredFreq <= settings.MIN_ACCEL_GRIPLOSS_VIBRATION)
+                    {
+                        p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, filteredResistance };
+
+                        filteredFreq = 0;
+                        filteredResistance = 0;
+					}
+                    else
+                    {
+                        p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, filteredFreq, filteredResistance, settings.BRAKE_VIBRATION_START, 0, 0, 0, 0 };
+                    }
+					if (verbose)
+					{
+						Console.WriteLine($"Setting Throttle to vibration mode with freq: {filteredFreq}, Resistance: {filteredResistance}");
+					}
+				}
+                else
+                {
+                    //It should probably always be uniformly stiff
+                    resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_THROTTLE_RESISTANCE, settings.MAX_THROTTLE_RESISTANCE));
+                    filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
+                    
+                    lastThrottleResistance = filteredResistance;
+                    p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, filteredResistance };
+                }
+
+				if (logToCsv)
+				{
+					csvRecord.AverageAcceleration = avgAccel;
+					csvRecord.ThrottleResistance = resistance;
+					csvRecord.ThrottleResistance_filtered = filteredResistance;
+				}
+
+				if (verbose)
+                {
+                    Console.WriteLine($"Average Acceleration: {avgAccel}; Throttle Resistance: {filteredResistance}");
+                }
+                #endregion
+
+				#region Left Trigger
+				//Update the left(Brake) trigger
+
+				if (combinedTireSlip < settings.GRIP_LOSS_VAL && data.Brake < settings.BRAKE_VIBRATION__MODE_START)
+                {
+                    freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
+                    resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 255, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
+                    filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
+                    filteredFreq = EWMA(freq, lastBrakeFreq, settings.EWMA_ALPHA_BRAKE_FREQ);
+                    lastBrakeFreq = filteredFreq;
+                    lastBrakeResistance = filteredResistance;
+                    if (filteredFreq <= settings.MIN_BRAKE_VIBRATION)
+                    {
+                        p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, 0 };
+
+                    }
+                    else
+                    {
+                        p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, filteredFreq, filteredResistance, settings.BRAKE_VIBRATION_START, 0, 0, 0, 0 };
+
+                    }
+                    //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
+                    if (verbose)
+                    {
+                        Console.WriteLine($"Setting Brake to vibration mode with freq: {filteredFreq}, Resistance: {filteredResistance}");
+                    }
 
                 }
                 else
                 {
-                    p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.CustomTriggerValue, CustomTriggerValueMode.VibrateResistance, filteredFreq, filteredResistance, settings.BRAKE_VIBRATION_START, 0, 0, 0, 0 };
+                    //By default, Increasingly resistant to force
+                    resistance = (int)Math.Floor(Map(data.Brake, 0, 255, settings.MIN_BRAKE_RESISTANCE, settings.MAX_BRAKE_RESISTANCE));
+                    filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
+                    lastBrakeResistance = filteredResistance;
+                    p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, filteredResistance };
 
+                    //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
                 }
-                //Set left trigger to the custom mode VibrateResitance with values of Frequency = freq, Stiffness = 104, startPostion = 76. 
                 if (verbose)
                 {
-                    Console.WriteLine($"Setting Brake to vibration mode with freq: {filteredFreq}, Resistance: {filteredResistance}");
+                    Console.WriteLine($"Brake: {data.Brake}; Brake Resistance: {filteredResistance}; Tire Slip: {combinedTireSlip}");
                 }
+                if (logToCsv)
+                {
+                    csvRecord.BrakeResistance = resistance;
+                    csvRecord.combinedTireSlip = combinedTireSlip;
+                    csvRecord.BrakeVibrationFrequency = freq;
+                    csvRecord.BrakeResistance_filtered = filteredResistance;
+                    csvRecord.BrakeVibrationFrequency_freq = filteredFreq;
 
-            }
-            else
-            {
-                //By default, Increasingly resistant to force
-                resistance = (int)Math.Floor(Map(data.Brake, 0, 255, settings.MIN_BRAKE_RESISTANCE, settings.MAX_BRAKE_RESISTANCE));
-                filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
-                lastBrakeResistance = filteredResistance;
-                p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, filteredResistance };
+                }
+                #endregion
 
-                //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
-            }
-            if (verbose)
-            {
-                Console.WriteLine($"Brake: {data.Brake}; Brake Resistance: {filteredResistance}; Tire Slip: {combinedTireSlip}");
-            }
-            if (logToCsv)
-            {
-                csvRecord.BrakeResistance = resistance;
-                csvRecord.combinedTireSlip = combinedTireSlip;
-                csvRecord.BrakeVibrationFrequency = freq;
-                csvRecord.BrakeResistance_filtered = filteredResistance;
-                csvRecord.BrakeVibrationFrequency_freq = filteredFreq;
+                #region Light Bar
+                //Update the light bar
+                //Currently registers intensity on the green channel based on engine RPM as a percantage of the maxium. Changes to red if RPM ratio > 80% (usually red line)
+                float CurrentRPMRatio = data.CurrentEngineRpm / data.EngineMaxRpm;
+                if (CurrentRPMRatio >= settings.RPM_REDLINE_RATIO)
+                {
+					p.instructions[1].parameters = new object[] { controllerIndex, (int)Math.Floor(CurrentRPMRatio * 255), 0, 0 };
+				}
+                else
+                {
+                    p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor(CurrentRPMRatio * 255), 0 };
+                }
+                if (verbose)
+                {
+                    Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
+                }
+				#endregion
+			}
 
-            }
-            //Update the light bar
-            p.instructions[1].type = InstructionType.RGBUpdate;
-            //Currently registers intensity on the green channel based on engnine RPM as a percantage of the maxium. 
-            p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor((data.CurrentEngineRpm / data.EngineMaxRpm) * 255), 0 };
-            if (verbose)
-            {
-                Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
-
-            }
-            if (logToCsv)
+			if (logToCsv)
             {
                 csv.WriteRecord(csvRecord);
                 csv.NextRecord();
@@ -260,7 +424,7 @@ namespace ForzaDSX
 
                 // ----------------------------------------------------------------------------------------------------------------------------
 
-                // TriggerThreshold needs 2 params LeftTrigger:0-255 RightTrigger:0-255
+                // TriggerThreshold needs 2 params p.instructions[0]:0-255 p.instructions[2]:0-255
                 p.instructions[3].type = InstructionType.TriggerThreshold;
                 p.instructions[3].parameters = new object[] { controllerIndex, Trigger.Right, 0 };
 
