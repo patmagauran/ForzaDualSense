@@ -29,8 +29,13 @@ namespace ForzaDSX
 		static int LastValidCarCPI = 0;
         static float MaxCPI = 255;
 
+        static float LastEngineRPM = 0;
+		// FH does not always correctly set IsRaceOn, so we must also check if the RPM info is the same for a certain ammount of time
+		static uint LastRPMAccumulator = 0;
+        static uint RPMAccumulatorTriggerRaceOff = 200;
+
 		// Colors for Light Bar while in menus -> using car's PI colors from Forza
-        public static readonly uint CarClassD = 0;
+		public static readonly uint CarClassD = 0;
         public static readonly int[] ColorClassD = { 107, 185, 236 };
         public static readonly uint CarClassC = 1;
         public static readonly int[] ColorClassC = { 234, 202, 49 };
@@ -80,7 +85,30 @@ namespace ForzaDSX
             int freq = 0;
             int filteredFreq = 0;
 
-            float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
+            bool bInRace = data.IsRaceOn;
+
+			float currentRPM = data.CurrentEngineRpm;
+
+			// FH does not always correctly set IsRaceOn, so we must also check if the RPM info is the same for a certain ammount of time
+            // Also check if Power <= 0 (car is really stopped)
+			if (currentRPM == LastEngineRPM
+				&& data.Power <= 0)
+            {
+                LastRPMAccumulator++;
+                if(LastRPMAccumulator > RPMAccumulatorTriggerRaceOff)
+                {
+                    bInRace = false;
+                }
+            }
+            else
+            {
+                LastRPMAccumulator = 0;
+			}
+
+			LastEngineRPM = currentRPM;
+
+			//Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
+			float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
 
             uint currentClass = LastValidCarClass;
             if (data.CarClass > 0)
@@ -104,7 +132,7 @@ namespace ForzaDSX
 			p.instructions[1].type = InstructionType.RGBUpdate;
 
 			// No race = normal triggers
-			if (!data.IsRaceOn)
+			if (!bInRace)
             {
 				p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Normal, 0, 0 };
 				p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Normal, 0, 0 };
@@ -188,10 +216,10 @@ namespace ForzaDSX
 				avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
 
 				// If losing grip, start to "vibrate"
-				if (combinedTireSlip > settings.GRIP_LOSS_VAL)
+				if (combinedTireSlip > settings.THROTTLE_GRIP_LOSS_VAL)
                 {
-                    freq = settings.MAX_ACCEL_GRIPLOSS_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_ACCEL_GRIPLOSS_VIBRATION));
-					resistance = settings.MIN_ACCEL_GRIPLOSS_STIFFNESS - (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
+                    freq = (int)Math.Floor(Map(combinedTireSlip, settings.THROTTLE_GRIP_LOSS_VAL, 5, 0, settings.MAX_ACCEL_GRIPLOSS_VIBRATION));
+					resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
 					//resistance = settings.MIN_ACCEL_GRIPLOSS_STIFFNESS - (int)Math.Floor(Map(data.Accelerator, 0, 255, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
 					filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
                     filteredFreq = EWMA(freq, lastThrottleFreq, settings.EWMA_ALPHA_THROTTLE_FREQ);
@@ -273,8 +301,6 @@ namespace ForzaDSX
                     filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
                     lastBrakeResistance = filteredResistance;
                     p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, filteredResistance };
-
-                    //Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
                 }
                 if (verbose)
                 {
@@ -294,16 +320,18 @@ namespace ForzaDSX
                 #region Light Bar
                 //Update the light bar
                 //Currently registers intensity on the green channel based on engine RPM as a percantage of the maxium. Changes to red if RPM ratio > 80% (usually red line)
-                float CurrentRPMRatio = data.CurrentEngineRpm / data.EngineMaxRpm;
-                if (CurrentRPMRatio >= settings.RPM_REDLINE_RATIO)
+                float CurrentRPMRatio = currentRPM / data.EngineMaxRpm;
+                int GreenChannel = (int)Math.Floor(CurrentRPMRatio * 255);
+                int RedChannel = (int)Math.Floor(CurrentRPMRatio * 255);
+				if (CurrentRPMRatio >= settings.RPM_REDLINE_RATIO)
                 {
-					p.instructions[1].parameters = new object[] { controllerIndex, (int)Math.Floor(CurrentRPMRatio * 255), 0, 0 };
+                    // Remove Green
+					GreenChannel = 255 - GreenChannel;
 				}
-                else
-                {
-                    p.instructions[1].parameters = new object[] { controllerIndex, 0, (int)Math.Floor(CurrentRPMRatio * 255), 0 };
-                }
-                if (verbose)
+
+				p.instructions[1].parameters = new object[] { controllerIndex, RedChannel, GreenChannel, 0 };
+
+				if (verbose)
                 {
                     Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
                 }

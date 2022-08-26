@@ -3,7 +3,8 @@ namespace ForzaDSX
     public class Settings
     {
         public float GRIP_LOSS_VAL { get; set; } = 0.5f; //The point at which the brake will begin to become choppy
-        public int MAX_BRAKE_VIBRATION { get; set; } = 35; //The maximum brake frequency in Hz (avoid over 40). COrrelates to better grip
+		public float THROTTLE_GRIP_LOSS_VAL { get; set; } = 0.2f; //The point at which the throttle will begin to become choppy
+		public int MAX_BRAKE_VIBRATION { get; set; } = 35; //The maximum brake frequency in Hz (avoid over 40). COrrelates to better grip
         public int MIN_BRAKE_VIBRATION { get; set; } = 3; //The Minimum brake frequency in Hz (avoid over 40). Helps avoid clicking in controller
         public float TURN_ACCEL_MOD { get; set; } = 0.5f; //How to scale turning acceleration in determining throttle stiffness.
         public float EWMA_ALPHA_THROTTLE { get; set; } = 0.01f; //Smoothing for Throttle Resistance output. Lower = smoother. Must be greater than 0
