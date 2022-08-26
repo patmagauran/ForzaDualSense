@@ -3,13 +3,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-<PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
-
+    <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
     <SelfContained Condition="'$(Configuration)' == 'Release'">true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
     <Configurations>Release</Configurations>
     <Platforms>AnyCPU</Platforms>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
   </PropertyGroup>
 <ItemGroup>
     <Content Include="appsettings.ini">
@@ -23,6 +23,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

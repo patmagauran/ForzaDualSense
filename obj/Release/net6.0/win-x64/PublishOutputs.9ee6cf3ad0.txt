@@ -1,3 +1,0 @@
-C:\Users\apple\Desktop\forzadsx\ForzaDSX.pdb
-C:\Users\apple\Desktop\forzadsx\appsettings.ini
-C:\Users\apple\Desktop\forzadsx\ForzaDSX.exe

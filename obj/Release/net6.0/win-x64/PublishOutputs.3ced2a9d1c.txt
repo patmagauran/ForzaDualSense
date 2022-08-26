@@ -1,3 +1,0 @@
-C:\Users\apple\Desktop\forzabuild\ForzaDualSense.pdb
-C:\Users\apple\Desktop\forzabuild\appsettings.ini
-C:\Users\apple\Desktop\forzabuild\ForzaDualSense.exe
