@@ -1,2 +1,6 @@
 ForzaDualSense/bin/*
 ForzaDualSense/obj/*
+obj
+.idea
+.vs
+.vscode
