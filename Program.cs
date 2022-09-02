@@ -14,7 +14,7 @@ namespace ForzaDSX
 {
     class Program
     {
-        public const String VERSION = "0.3.1";
+        public const String VERSION = "0.4.0";
         static Settings settings = new Settings();
         static bool verbose = false;
         static bool logToCsv = false;
@@ -109,8 +109,10 @@ namespace ForzaDSX
 
 			//Get average tire slippage. This value runs from 0.0 upwards with a value of 1.0 or greater meaning total loss of grip.
 			float combinedTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight) + Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 4;
+			float combinedFrontTireSlip = (Math.Abs(data.TireCombinedSlipFrontLeft) + Math.Abs(data.TireCombinedSlipFrontRight)) / 2;
+			float combinedRearTireSlip = (Math.Abs(data.TireCombinedSlipRearLeft) + Math.Abs(data.TireCombinedSlipRearRight)) / 2;
 
-            uint currentClass = LastValidCarClass;
+			uint currentClass = LastValidCarClass;
             if (data.CarClass > 0)
             {
 				LastValidCarClass = currentClass = data.CarClass;
@@ -215,14 +217,19 @@ namespace ForzaDSX
 
 				avgAccel = (float)Math.Sqrt((settings.TURN_ACCEL_MOD * (data.AccelerationX * data.AccelerationX)) + (settings.FORWARD_ACCEL_MOD * (data.AccelerationZ * data.AccelerationZ)));
 
+                // Define losing grip as front tires slipping or rear tires slipping while accelerating a fair ammount
+                bool bLosingAccelGrip =
+                    combinedFrontTireSlip > settings.THROTTLE_GRIP_LOSS_VAL
+                    || (combinedRearTireSlip > settings.THROTTLE_GRIP_LOSS_VAL && data.Accelerator > 200);
+
 				// If losing grip, start to "vibrate"
-				if (combinedTireSlip > settings.THROTTLE_GRIP_LOSS_VAL)
+				if (bLosingAccelGrip)
                 {
                     freq = (int)Math.Floor(Map(combinedTireSlip, settings.THROTTLE_GRIP_LOSS_VAL, 5, 0, settings.MAX_ACCEL_GRIPLOSS_VIBRATION));
 					resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
 					//resistance = settings.MIN_ACCEL_GRIPLOSS_STIFFNESS - (int)Math.Floor(Map(data.Accelerator, 0, 255, settings.MIN_ACCEL_GRIPLOSS_STIFFNESS, settings.MAX_ACCEL_GRIPLOSS_STIFFNESS));
-					filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
-                    filteredFreq = EWMA(freq, lastThrottleFreq, settings.EWMA_ALPHA_THROTTLE_FREQ);
+					filteredResistance = (int)Math.Floor(EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE) * settings.RIGHT_TRIGGER_EFFECT_INTENSITY);
+                    filteredFreq = (int)Math.Floor(EWMA(freq, lastThrottleFreq, settings.EWMA_ALPHA_THROTTLE_FREQ) * settings.RIGHT_TRIGGER_EFFECT_INTENSITY);
                     
                     lastThrottleResistance = filteredResistance;
                     lastThrottleFreq = filteredFreq;
@@ -247,7 +254,7 @@ namespace ForzaDSX
                 {
                     //It should probably always be uniformly stiff
                     resistance = (int)Math.Floor(Map(avgAccel, 0, settings.ACCELRATION_LIMIT, settings.MIN_THROTTLE_RESISTANCE, settings.MAX_THROTTLE_RESISTANCE));
-                    filteredResistance = EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE);
+                    filteredResistance = (int)Math.Floor(EWMA(resistance, lastThrottleResistance, settings.EWMA_ALPHA_THROTTLE) * settings.RIGHT_TRIGGER_EFFECT_INTENSITY);
                     
                     lastThrottleResistance = filteredResistance;
                     p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, filteredResistance };
@@ -262,7 +269,7 @@ namespace ForzaDSX
 
 				if (verbose)
                 {
-                    Console.WriteLine($"Average Acceleration: {avgAccel}; Throttle Resistance: {filteredResistance}");
+                    Console.WriteLine($"Average Acceleration: {avgAccel}; Throttle Resistance: {filteredResistance}; Accelerator: {data.Accelerator}");
                 }
                 #endregion
 
@@ -273,8 +280,8 @@ namespace ForzaDSX
                 {
                     freq = settings.MAX_BRAKE_VIBRATION - (int)Math.Floor(Map(combinedTireSlip, settings.GRIP_LOSS_VAL, 1, 0, settings.MAX_BRAKE_VIBRATION));
                     resistance = settings.MIN_BRAKE_STIFFNESS - (int)Math.Floor(Map(data.Brake, 0, 255, settings.MAX_BRAKE_STIFFNESS, settings.MIN_BRAKE_STIFFNESS));
-                    filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
-                    filteredFreq = EWMA(freq, lastBrakeFreq, settings.EWMA_ALPHA_BRAKE_FREQ);
+                    filteredResistance = (int)Math.Floor(EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE) * settings.LEFT_TRIGGER_EFFECT_INTENSITY);
+                    filteredFreq = (int)Math.Floor(EWMA(freq, lastBrakeFreq, settings.EWMA_ALPHA_BRAKE_FREQ) * settings.LEFT_TRIGGER_EFFECT_INTENSITY);
                     lastBrakeFreq = filteredFreq;
                     lastBrakeResistance = filteredResistance;
                     if (filteredFreq <= settings.MIN_BRAKE_VIBRATION)
@@ -298,7 +305,7 @@ namespace ForzaDSX
                 {
                     //By default, Increasingly resistant to force
                     resistance = (int)Math.Floor(Map(data.Brake, 0, 255, settings.MIN_BRAKE_RESISTANCE, settings.MAX_BRAKE_RESISTANCE));
-                    filteredResistance = EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE);
+                    filteredResistance = (int)Math.Floor(EWMA(resistance, lastBrakeResistance, settings.EWMA_ALPHA_BRAKE) * settings.LEFT_TRIGGER_EFFECT_INTENSITY);
                     lastBrakeResistance = filteredResistance;
                     p.instructions[0].parameters = new object[] { controllerIndex, Trigger.Left, TriggerMode.Resistance, 0, filteredResistance };
                 }
@@ -333,7 +340,7 @@ namespace ForzaDSX
 
 				if (verbose)
                 {
-                    Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}");
+                    Console.WriteLine($"Engine RPM: {data.CurrentEngineRpm}; Engine Max RPM: {data.EngineMaxRpm}; Engine Idle RPM: {data.EngineIdleRpm}");
                 }
 				#endregion
 			}
@@ -666,8 +673,12 @@ namespace ForzaDSX
                     }
                     Console.WriteLine("Forza and DSX are running. Let's Go!");
                 }
-                //Connect to DualSenseX
-                Connect();
+
+                settings.LEFT_TRIGGER_EFFECT_INTENSITY = Math.Clamp(settings.LEFT_TRIGGER_EFFECT_INTENSITY, 0.0f, 1.0f);
+				settings.RIGHT_TRIGGER_EFFECT_INTENSITY = Math.Clamp(settings.RIGHT_TRIGGER_EFFECT_INTENSITY, 0.0f, 1.0f);
+
+				//Connect to DualSenseX
+				Connect();
 
                 //Connect to Forza
                 ipEndPoint = new IPEndPoint(IPAddress.Loopback, settings.FORZA_PORT);
