@@ -234,7 +234,8 @@ namespace ForzaDSX
                     lastThrottleResistance = filteredResistance;
                     lastThrottleFreq = filteredFreq;
 
-					if (filteredFreq <= settings.MIN_ACCEL_GRIPLOSS_VIBRATION)
+					if (filteredFreq <= settings.MIN_ACCEL_GRIPLOSS_VIBRATION
+                        || data.Accelerator <= settings.THROTTLE_VIBRATION_MODE_START)
                     {
                         p.instructions[2].parameters = new object[] { controllerIndex, Trigger.Right, TriggerMode.Resistance, 0, filteredResistance };
 
@@ -327,8 +328,9 @@ namespace ForzaDSX
                 #region Light Bar
                 //Update the light bar
                 //Currently registers intensity on the green channel based on engine RPM as a percantage of the maxium. Changes to red if RPM ratio > 80% (usually red line)
-                float CurrentRPMRatio = currentRPM / data.EngineMaxRpm;
-                int GreenChannel = (int)Math.Floor(CurrentRPMRatio * 255);
+                float engineRange = data.EngineMaxRpm - data.EngineIdleRpm;
+				float CurrentRPMRatio = (currentRPM - data.EngineIdleRpm) / engineRange;
+                int GreenChannel = Math.Max((int)Math.Floor(CurrentRPMRatio * 255), 50);
                 int RedChannel = (int)Math.Floor(CurrentRPMRatio * 255);
 				if (CurrentRPMRatio >= settings.RPM_REDLINE_RATIO)
                 {
