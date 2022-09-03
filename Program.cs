@@ -57,6 +57,7 @@ namespace ForzaDSX
 		//Also see the Test Function below to see examples about those commands
 		static void SendData(DataPacket data, CsvWriter csv)
         {
+            Console.Title = "ForzaDSX version: " + VERSION;
             Packet p = new Packet();
             CsvData csvRecord = new CsvData();
             //Set the controller to do this for
@@ -673,7 +674,7 @@ namespace ForzaDSX
                         DSX = Process.GetProcessesByName("DSX");
                         DSX_2 = Process.GetProcessesByName("DualsenseX");
                     }
-                    Console.WriteLine("Forza and DSX are running. Let's Go!");
+                    Console.WriteLine("Forza and DSX are running. Let's Go! Version: " + VERSION);
                 }
 
                 settings.LEFT_TRIGGER_EFFECT_INTENSITY = Math.Clamp(settings.LEFT_TRIGGER_EFFECT_INTENSITY, 0.0f, 1.0f);
