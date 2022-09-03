@@ -14,7 +14,7 @@ namespace ForzaDSX
 {
     class Program
     {
-        public const String VERSION = "0.4.0";
+        public const String VERSION = "0.4.1";
         static Settings settings = new Settings();
         static bool verbose = false;
         static bool logToCsv = false;
