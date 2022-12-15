@@ -1,3 +1,9 @@
+## Maintenance Status
+
+I am going to limit my development on this to as needed. I am content with the current configuration and feel. Another member is maintaining their own repo based on the same code with a different feel. I will continue to leave this unarchived so users have the option to choose. The link to the other repo is: https://github.com/cosmii02/ForzaDSX
+
+
+
 ## Intro
 
 This is a program to control lights and adaptive triggers on a DualSense 5 controller using DualSenseX for compatible Forza Games.
