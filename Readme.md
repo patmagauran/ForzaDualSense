@@ -1,6 +1,6 @@
-## Maintenance Status
+## Archival
 
-I am going to limit my development on this to as needed. I am content with the current configuration and feel. Another member is maintaining their own repo based on the same code with a different feel. I will continue to leave this unarchived so users have the option to choose. The link to the other repo is: https://github.com/cosmii02/ForzaDSX
+As of November 23, 2023. The Repo maintained by cosmii02: https://github.com/cosmii02/ForzaDSX provides a more stable experience, a UI to customize the settings the originally differed between the two repos, and a larger user base. For those reasons, I am choosing to archive this and direct everyone to that repo.
 
 
 
